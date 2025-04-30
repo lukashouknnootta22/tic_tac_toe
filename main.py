@@ -1,94 +1,154 @@
-#Tic Tac Toe on the command line
+# Простая игра крестики-нолики в терминале
 
-def show_board(board: list):
-	''' 
-	Shows the current state of the playing field
+class Board:
+	def __init__(self):
+		"""
+		Инициализация доски.
+		"""
+		self.board = [
+			['-', '-', '-'],
+			['-', '-', '-'],
+			['-', '-', '-'],
+		]
 
-	:param board: playing field in the form of a list
-	'''
-	print ('')
-	print (' ', 0, 1, 2)
-	n = 0
-	for row in board:
-		print(f'{n} {' '.join(row)}')
-		n += 1
+	def show_board(self) -> None:
+		"""
+		Показ доски.
+		"""
+		print (' ', 0, 1, 2)
+		n = 0
+		for row in self.board:
+			print(f'{n} {" ".join(row)}')
+			n += 1
 
-def make_move(board: list, player: str):
-	'''
-	Taking the current player's turn
+	def make_move(self, row: int, column: int, player: str) -> None:
+		"""
+		Выполнить ход на доске.
+		:param row: Номер строки.
+		:param column: Номер столбца.
+		:param player: Символ игрока
+		"""
+		self.board[row][column] = player
 
-	:param board: playing field in the form of a list
-	:param player: current player
-	'''
-	print (f'Player - {player} moves')
-	print ('')
+	def is_empty(self, row: int, column: int) -> bool:
+		"""
+		Проверка на пустую ячейку.
+		:param row: Номер строки.
+		:param column: Номер столбца.
+		:return: True, если пусто, иначе False.
+		"""
+		if self.board[row][column] == '-':
+			return True
+		return False
+		
+	def is_win(self, player: str) -> bool:
+		"""
+		Проверка поля на победную комбинацию.
+		:param player: Символ игрока.
+		:return: True, если имеется победная комбинация, иначе False.
+		"""
+		for i in range(3):
+			if all(cell == player for cell in self.board[i]): # Проверка всех горизонтальных линий.
+				return True
+			if all(self.board[j][i] == player for j in range(3)): # Проверка всех вертикальных линий.
+				return True
+		# Проверка двух диагоналей.
+		if all(self.board[i][i] == player for i in range(3)):
+			return True
+		if all(self.board[i][2 - i] == player for i in range(3)):
+			return True
+		return False
+
+	def is_draw(self) -> bool:
+		"""
+		Проверка доски на ничью.
+		:return: True, если нет пустых ячеек, иначе False.		
+		"""
+		if all(cell != '-' for row in self.board for cell in row):
+			return True
+		return False
+
+
+class Player:
+	def __init__(self):
+		"""
+		Инициализация игроков.
+		"""
+		self.players = ['X','O']
+		self.current_player = 0
+
+	def switch_player(self) -> None:
+		"""
+		Смена хода игрока.
+		"""
+		self.current_player = 1 - self.current_player
+	
+	def get_current_player(self) -> str:
+		"""
+		Получить нынешнего игрока.
+		:return: Символ игрока.
+		"""
+		return self.players[self.current_player]
+
+	def make_move(self, row: int, column: int, board: Board) -> None:
+		"""
+		Выполнить ход.
+		:param row: Номер строки.
+		:param column: Номер столбца.
+		:param board: Класс Доски.
+		"""
+		player = self.get_current_player()
+		if row >= 3 or column >= 3:
+			raise IndexError('Выход за ограничения поля. Ввводите корректные номера столбоц и строк.')
+		if board.is_empty:
+			board.make_move(row=row, column=column, player=player)
+		else:
+			raise ValueError(f'Клетка {row}:{column} уже занята.')
+
+def main() -> None:
+	"""
+	Основной цикл игры.
+	"""
+	pos_anser = ('y', 'yes')
 	while True:
-		try:
-			row = int(input('Enter row number: '))
-			column = int(input('Enter column number: '))
+		board = Board()
+		players = Player()
 
-			if board[row][column] != '-':
-				print ('Selected cell is occupied')
+		while True:
+			print('')
+			board.show_board()
+			current_player = players.get_current_player()
+			print('')
+			print (f'Ход игрока - {current_player}.')
+
+			try:
+				row = int(input('Введите номер строки: '))
+				column = int(input('Введите номер столбца: '))
+				players.make_move(row=row, column=column, board=board)
+			except (ValueError, IndexError) as e:
+				print('')
+				print(f'Ошибка ввода: {e}')
+				continue
 			else:
-				board[row][column] = player
-				break
-		except (IndexError, ValueError): #Processing incoming results according to the required format and range
-			print ('Please enter only numbers from 0 to 2')
+				if board.is_win(player=current_player):
+					print('')
+					board.show_board()
+					print('')
+					print (f'Игрок - {current_player} - победил')
+					break
+				if board.is_draw():
+					print('')
+					board.show_board()
+					print('')
+					print ('НИЧЬЯ!!!')
+					break
 
-def check_winner(board, player):
-	'''
-	Checking the playing field for a winning combination
+				players.switch_player()
 
-	:param board: playing field in the form of a list
-	:param player: current player
-	:return: True, if a winning combination is found, False otherwise 
-	'''
-	for i in range(3):
-		if all(cell == player for cell in board[i]): # Checking all horizontal lines
-			return True
-		if all(board[j][i] == player for j in range(3)): # Checking all vertical lines
-			return True
-	# Checking Diagonals
-	if all(board[i][i] == player for i in range(3)):
-		return True
-	if all(board[i][2 - i] == player for i in range(3)):
-		return True
-	return False
+		answer = input('Хотите ещё игру? (y/n): ')
+		if answer.lower() in pos_anser:
+			continue
+		break
 
-def is_draw(board):
-	'''
-	Checking the playing field for a draw (presence of empty cells)
-
-	:param board: playing field in the form of a list
-	:return: True, if all cells are occupied, False otherwise 
-	'''
-	if all(cell != '-' for row in board for cell in row):
-		return True
-	return False
-
-def game():
-	'''
-	Main Function: Runs other functions and has initial values
-	'''
-	board = [['-', '-', '-'],['-', '-', '-'],['-', '-', '-']]
-	players = ['X','O']
-	current_player = 0
-
-	while True:
-		show_board(board)
-		player = players[current_player]
-		make_move(board, player)
-
-		if check_winner(board, player):
-			show_board(board)
-			print (f'Player - {player} wins')
-			break
-
-		if is_draw(board):
-			show_board(board)
-			print ('Draw')
-			break
-			
-		current_player = 1 - current_player
-
-game()
+if __name__ == '__main__':
+	main()
